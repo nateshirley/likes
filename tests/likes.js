@@ -15,31 +15,25 @@ describe("likes", () => {
 
     it("init", async () => {
 
-        let [_likeAccount, _likeAccountBump] =
-            await web3.PublicKey.findProgramAddress(
-                [anchor.utils.bytes.utf8.encode("likes"), payer.publicKey.toBuffer()],
-                program.programId
-            );
-        likeAccount = _likeAccount;
-        likeAccountBump = _likeAccountBump;
-
-        if (!(await doesLikeAccountExist(likeAccount, provider.connection))) {
-            const init = await program.rpc.initializeLikeAccount(likeAccountBump, {
-                accounts: {
-                    initializer: payer.publicKey,
-                    likesAccount: likeAccount,
-                    systemProgram: web3.SystemProgram.programId,
-                },
-                signers: [payer],
-            });
-        }
-        const tx = await program.rpc.performLike(likeAccountBump, "oj6h1R25WFoKieAuaoQo6vb3viFotYfRnw5RMgKBkyDPqJxQSE1hqXN7vgmbmCT4yMNFUTkGNBCnPsJTUKQBDL5", {
+        let likesAccount = web3.Keypair.generate();
+        const init = await program.rpc.initializeLikeAccount({
             accounts: {
-                performer: payer.publicKey,
-                likesAccount: likeAccount,
+                likesAccount: likesAccount.publicKey
             },
-            signers: [payer],
+            instructions: [
+                await program.account.likesAccount.createInstruction(likesAccount),
+            ],
+            signers: [likesAccount],
         });
+
+
+        // const tx = await program.rpc.performLike(likeAccountBump, "oj6h1R25WFoKieAuaoQo6vb3viFotYfRnw5RMgKBkyDPqJxQSE1hqXN7vgmbmCT4yMNFUTkGNBCnPsJTUKQBDL5", {
+        //     accounts: {
+        //         performer: payer.publicKey,
+        //         likesAccount: likeAccount,
+        //     },
+        //     signers: [payer],
+        // });
     });
 
     const doesLikeAccountExist = async (

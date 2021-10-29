@@ -9,29 +9,22 @@ const LIKES_SIZE: u8 = 35;
 pub mod likes {
     use super::*;
 
-    pub fn initialize_likes_account(
-        _ctx: Context<InitializeLikeAccount>,
-        _likes_account_bump: u8,
-    ) -> ProgramResult {
+    pub fn initialize_like_account(ctx: Context<InitializeLikeAccount>) -> ProgramResult {
         //do an emit probably
+        // let mut likes_account = ctx.accounts.likes_account.load_init()?;
+        // likes_account.insert_index = 0;
+        // likes_account.likes = [Like {
+        //     transaction_signature: [0; 88],
+        // }; 35];
         Ok(())
     }
 
     pub fn perform_like(
         ctx: Context<PerformLike>,
-        _likes_account_bump: u8,
+        _like_account_bump: u8,
         new_like: String,
     ) -> ProgramResult {
-        let like_bytes = new_like.as_bytes();
-        let mut new_like = [0u8; 88];
-        new_like[..like_bytes.len()].copy_from_slice(like_bytes);
-        let mut likes_account = ctx.accounts.likes_account.load_mut()?;
-        let index = usize::from(likes_account.insert_index);
-        let like = Like {
-            transaction_signature: new_like,
-        };
-        likes_account.likes[index] = like;
-        likes_account.insert_index = new_insert_index(likes_account.insert_index);
+        let mut likes_acct = ctx.accounts.likes_account.load_mut()?;
         Ok(())
     }
 }
@@ -45,24 +38,15 @@ pub fn new_insert_index(previous: u8) -> u8 {
 }
 
 #[derive(Accounts)]
-#[instruction(_likes_account_bump: u8)]
 pub struct InitializeLikeAccount<'info> {
     #[account(mut)]
-    pub initializer: Signer<'info>,
-    #[account(
-        init,
-        seeds = [LIKES_SEED, initializer.key().as_ref()],
-        bump = _likes_account_bump,
-        payer = initializer
-    )]
-    pub likes_account: Loader<'info, Likes>,
-    pub system_program: Program<'info, System>,
+    pub likes_account: Loader<'info, LikesAccount>,
 }
 
 #[account(zero_copy)]
-pub struct Likes {
-    pub insert_index: u8,
-    pub likes: [Like; 35],
+pub struct LikesAccount {
+    insert_index: u8,
+    likes: [Like; 35],
 }
 
 #[zero_copy]
@@ -70,30 +54,48 @@ pub struct Like {
     pub transaction_signature: [u8; 88],
 }
 
-impl Default for Likes {
-    fn default() -> Likes {
-        let default_like = Like {
-            transaction_signature: [0; 88],
-        };
-        Likes {
-            insert_index: 0,
-            likes: [default_like; 35],
-        }
-    }
-}
-
 #[derive(Accounts)]
-#[instruction(_likes_account_bump: u8)]
+#[instruction(_like_account_bump: u8)]
 pub struct PerformLike<'info> {
     #[account(mut)]
     pub performer: Signer<'info>,
     #[account(
         mut,
         seeds = [LIKES_SEED, performer.key().as_ref()],
-        bump = _likes_account_bump,
+        bump = _like_account_bump,
     )]
-    pub likes_account: Loader<'info, Likes>,
+    likes_account: Loader<'info, LikesAccount>,
 }
+
+// #[zero_copy]
+// pub struct Like {
+//     pub transaction_signature: [u8; 88],
+// }
+
+// impl Likes {
+//     fn append(&mut self, like: Like) {
+//         self.likes[Likes::index_of(self.insert_index)] = like;
+//         // if ChatRoom::index_of(self.head + 1) == ChatRoom::index_of(self.tail) {
+//         //     self.tail += 1;
+//         // }
+//         self.insert_index += 1;
+//     }
+//     fn index_of(counter: u8) -> usize {
+//         std::convert::TryInto::try_into(counter % 42).unwrap()
+//     }
+// }
+
+// impl Default for Likes {
+//     fn default() -> Likes {
+//         // let default_like = Like {
+//         //     transaction_signature: [0; 88],
+//         // };
+//         Likes {
+//             insert_index: 0,
+//             likes: [[0; 88]; 42],
+//         }
+//     }
+// }
 
 //so we don't want to init every time but only if the user doesn't have an account
 
