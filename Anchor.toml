@@ -1,12 +1,12 @@
 [programs.localnet]
-likes = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+likes = "Av2WRMKbkw1ircKXbxh9djiBUhJzasHEhXXHkcz3xVUw"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "localnet"
+cluster = "https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/"
 wallet = "/Users/nathanshirley/.config/solana/id.json"
 
 [scripts]
-test = "ts-mocha -p ./tsconfig.json -t 1000000 tests/*.ts"
+test = "mocha -t 1000000 tests/"
