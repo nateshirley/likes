@@ -3,63 +3,47 @@ const { web3 } = anchor;
 const { PublicKey, Keypair, SystemProgram, SYSVAR_RENT_PUBKEY } = web3;
 
 describe("likes", () => {
-    // Configure the client to use the local cluster.
+
     const provider = anchor.Provider.env();
     anchor.setProvider(provider);
+
+    // Program client handle.
     const program = anchor.workspace.Likes;
-
     let payer = provider.wallet.payer;
-    let likeAccount = null;
-    let likeAccountBump = null;
 
+    it('Is initialized!', async () => {
 
-    it("init", async () => {
-
-        let [_likeAccount, _likeAccountBump] =
-            await web3.PublicKey.findProgramAddress(
-                [anchor.utils.bytes.utf8.encode("likes"), payer.publicKey.toBuffer()],
-                program.programId
-            );
-        likeAccount = _likeAccount;
-        likeAccountBump = _likeAccountBump;
-
-        if (!(await doesLikeAccountExist(likeAccount, provider.connection))) {
-            const init = await program.rpc.initializeLikeAccount(likeAccountBump, {
-                accounts: {
-                    initializer: payer.publicKey,
-                    likesAccount: likeAccount,
-                    systemProgram: web3.SystemProgram.programId,
-                },
-                signers: [payer],
-            });
-        }
-        const tx = await program.rpc.performLike(likeAccountBump, "oj6h1R25WFoKieAuaoQo6vb3viFotYfRnw5RMgKBkyDPqJxQSE1hqXN7vgmbmCT4yMNFUTkGNBCnPsJTUKQBDL5", {
+        let seed = "likes"
+        let likes = await PublicKey.createWithSeed(payer.publicKey, seed, program.programId);
+        await program.rpc.createLikesAccount({
             accounts: {
-                performer: payer.publicKey,
-                likesAccount: likeAccount,
+                likes: likes,
+                user: payer.publicKey,
             },
+            instructions: [
+                SystemProgram.createAccountWithSeed({
+                    basePubkey: payer.publicKey,
+                    fromPubkey: payer.publicKey,
+                    lamports: await provider.connection.getMinimumBalanceForRentExemption(program.account.likes.size),
+                    newAccountPubkey: likes,
+                    programId: program.programId,
+                    seed: seed,
+                    space: program.account.likes.size,
+                })
+            ],
             signers: [payer],
         });
+
+        await program.rpc.newLike("oj6h1R25WFoKieAuaoQo6vb3viFotYfRnw5RMgKBkyDPqJxQSE1hqXN7vgmbmCT4yMNFUTkGNBCnPsJTUKQBDL5", {
+            accounts: {
+                likes: likes,
+                user: payer.publicKey
+            },
+            signers: [
+                payer
+            ]
+        })
     });
 
-    const doesLikeAccountExist = async (
-        likeAccountAddress,
-        connection
-    ) => {
-        let info = await connection.getAccountInfo(likeAccountAddress);
-        return info ? true : false;
-    };
 
 });
-//instructions: [
-    //         program.instruction.performLike(
-    //             likeAccountBump,
-    //             "45rycqGrhNJUFuTaTHDUcUxGztUmMg3mgRo8zupyMVUFG6Nkgwvqtwa1GwviE1faxAVScSgypkTpgji4V75fmzWt",
-    //             {
-    //                 accounts: {
-    //                     performer: payer.publicKey,
-    //                     likesAccount: likeAccount,
-    //                 },
-    //             }
-    //         ),
-    //     ],
